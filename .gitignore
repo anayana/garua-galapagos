@@ -1,0 +1,24 @@
+# Rohdaten nicht ins Repo -- alles ist per Skript reproduzierbar.
+# Fuehrender Slash: gilt NUR fuer das oberste data/. Ohne ihn wuerde auch
+# app/data/ und das Datenverzeichnis im shinylive-Bundle unter docs/
+# ignoriert -- die veroeffentlichte App waere dann leer.
+/data/
+
+# R
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+*.Rproj
+
+# renv: Bibliothek nicht committen, Lockfile schon
+renv/library/
+renv/staging/
+
+# unvollständige Downloads
+*.part
+
+# Zugangsdaten -- niemals committen
+.Renviron
+.cdsapirc
+.env

@@ -1,0 +1,12 @@
+name: Galapagos
+title: Galapagos
+username: anayananayana
+account: anayananayana
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 17659681
+bundleId: 12352555
+url: https://anayananayana.shinyapps.io/Galapagos/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE

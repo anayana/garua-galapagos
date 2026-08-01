@@ -1,0 +1,179 @@
+# =============================================================================
+# config.yml  --  zentrale Konfiguration der Galápagos-Nebel-Pipeline
+# Wird von allen Python- und R-Skripten gelesen.
+# Andere Insel / anderer Ausschnitt: nur region-Block ändern.
+# =============================================================================
+
+region:
+  name: Galapagos
+  # Bounding Box Archipel (etwas großzügig, deckt Isabela bis San Cristóbal)
+  lon_min: -92.0
+  lon_max: -89.0
+  lat_min:  -1.5
+  lat_max:   0.8
+  # Engerer Ausschnitt Santa Cruz (Puerto Ayora – Bellavista – Cerro Crocker)
+  focus:
+    lon_min: -90.55
+    lon_max: -90.10
+    lat_min:  -0.80
+    lat_max:  -0.55
+  center_lon: -90.32
+  center_lat: -0.72
+
+# --- Bodenstationen (Charles Darwin Foundation, dataZone) --------------------
+# Lizenz: CC BY-NC-SA 4.0 -- Namensnennung Pflicht, keine kommerzielle Nutzung.
+stations:
+  puerto_ayora:
+    label: "Puerto Ayora"
+    slug: "puerto-ayora"
+    lat: -0.743708
+    lon: -90.302647
+    elevation_m: 2
+    since: 1965
+    zone: "Tiefland / Küste"
+  bellavista:
+    label: "Bellavista"
+    slug: "bellavista"
+    lat: -0.692384
+    lon: -90.328160
+    elevation_m: 223
+    since: 1987
+    zone: "Hochland / Garúa"
+    # Rohdaten-Arbeitsmappe (ca. 10 MB), zusätzlich zum bereinigten CSV
+    raw_xls: "FCD_climate_data_87-2022_present_bellavista.xls"
+
+cdf:
+  base_url: "https://datazone.darwinfoundation.org/images/climate"
+  citation: >-
+    "Galapagos Climatology Database", dataZone, Charles Darwin Foundation,
+    https://datazone.darwinfoundation.org/en/climate.
+  license: "CC BY-NC-SA 4.0"
+
+# --- GOES ABI (AWS Open Data, kein Login) ------------------------------------
+goes:
+  # GOES-19 ist seit 2025-04-07 operationeller GOES-East (75.2 W).
+  # Für frühere Termine automatisch noaa-goes16 (siehe download_goes.py).
+  bucket_current: "noaa-goes19"
+  bucket_legacy:  "noaa-goes16"
+  switch_date: "2025-04-07"
+  region: "us-east-1"
+  # ABI Level 2 Cloud & Moisture Imagery, Full Disk (ein File je Kanal)
+  product: "ABI-L2-CMIPF"
+  # C07 = 3.9 um (Shortwave-IR), C13 = 10.3 um (Clean-IR)
+  # BTD = BT(C13) - BT(C07)  ->  Nacht-Nebel / tiefer Stratus
+  bands: ["C07", "C13"]
+  # Full-Disk-Dateien sind gross (~100-400 MB je Kanal und Termin).
+  # Deshalb nur ausgewählte UTC-Stunden laden. 06 UTC = 01 Uhr Ortszeit
+  # (Nebel-Maximum), 18 UTC = 13 Uhr Ortszeit (Vergleich Tag).
+  hours_utc: [6, 18]
+  # Nur der erste Scan der Stunde (Full Disk alle 10 min)
+  first_scan_only: true
+  start_date: "2024-06-01"
+  end_date:   "2024-12-31"
+
+# --- ERA5 (Copernicus CDS, kostenloser Account nötig) -----------------------
+era5:
+  url: "https://cds.climate.copernicus.eu/api"
+  years: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024]
+  # Stundenwerte wären riesig -> 4 Termine/Tag reichen für Inversionsstatistik
+  times: ["00:00", "06:00", "12:00", "18:00"]
+  single_levels:
+    dataset: "reanalysis-era5-single-levels"
+    variables:
+      - "2m_temperature"
+      - "2m_dewpoint_temperature"
+      - "surface_pressure"
+      - "boundary_layer_height"
+      - "low_cloud_cover"
+      - "total_cloud_cover"
+      - "sea_surface_temperature"
+      - "10m_u_component_of_wind"
+      - "10m_v_component_of_wind"
+  pressure_levels:
+    dataset: "reanalysis-era5-pressure-levels"
+    variables:
+      - "temperature"
+      - "relative_humidity"
+      - "geopotential"
+    # 1000 + 700 hPa -> Lower Tropospheric Stability (LTS = theta700 - theta1000)
+    levels: ["1000", "925", "850", "700"]
+
+# --- Copernicus DEM GLO-30 (AWS Open Data, kein Login) ----------------------
+dem:
+  base_url: "https://copernicus-dem-30m.s3.amazonaws.com"
+  resolution_tag: "10"   # 10 = GLO-30
+
+# --- Vegetationskarte Galápagos v.2016 (USFQ Instituto de Geografía) --------
+# Öffentlicher ArcGIS FeatureServer, kein Login.
+# Geprüft am 2026-08-01: 20106 Polygone, 15 Klassen, Geometrie in EPSG:3857.
+vegetation:
+  service_url: "https://services5.arcgis.com/qefe3CGaSKnteGG1/arcgis/rest/services/A_ECOSISTEMAS_NATIVOS_2016/FeatureServer/0"
+  # ACHTUNG: maxRecordCount des Dienstes ist 2000 bei 20106 Features.
+  # Ohne Paginierung liefert eine Abfrage stillschweigend nur die ersten 2000.
+  page_size: 2000
+  # Der Attributfilter ist eine VORAUSWAHL, kein Zuschnitt.
+  #
+  # BEFUND 2026-08-01: Das Feld Isla ist NICHT sauber gepflegt. Alle 1437
+  # Polygone mit Isla='Santa Cruz' tragen diesen Wert, ihre Geometrien spannen
+  # aber -91,36..-89,25 Laenge und -1,00..+0,59 Breite -- den halben Archipel.
+  # 225 Polygone mit zusammen 44.128 ha liegen ausserhalb Santa Cruz'. Das
+  # groesste "Santa-Cruz"-Polygon ist ein Deciduous Forest mit 57.119 ha,
+  # die Insel selbst misst ~98.600 ha.
+  #
+  # Deshalb: Attributfilter zum Vorfiltern (spart Seiten), danach ZWINGEND
+  # geometrischer Clip auf clip_bbox. Ohne den sind Flaechenzahlen bis zu
+  # 41 % zu hoch.
+  island: "Santa Cruz"
+  # Santa Cruz + Baltra, grosszuegig. Nach dem Clip: 100.695 ha, ueberlappungsfrei.
+  clip_bbox:
+    lon_min: -90.60
+    lon_max: -90.06
+    lat_min:  -0.80
+    lat_max:  -0.35
+  fields: ["FID", "Ecosis_Nat", "Isla", "Area_Ha"]
+  # Zielprojektion: metrisch, für Flächenbilanzen im Archipel geeignet
+  target_crs: "EPSG:32715"   # UTM 15S
+  # Hoehenbaender fuer die zonale Statistik (Pane 2), Obergrenzen in m
+  elev_breaks: [0, 100, 200, 300, 400, 500, 600, 700, 900]
+  # Die 15 Klassen des Dienstes (Feld Ecosis_Nat), Stand 2026-08-01
+  classes:
+    - "Agricultural Lands"
+    - "Coastal Humid Forest and Shrubland"
+    - "Deciduous Forest"
+    - "Deciduous Shrubland"
+    - "Deciduous tallgrass"
+    - "Evergreen Forest and Shrubland"
+    - "Evergreen Seasonal Forest"
+    - "Highland Deciduous tallgrass"
+    - "Humid Tallgrass"
+    - "Invasive Species"
+    - "Mangroves"
+    - "Old Lava"
+    - "Recent Lava"
+    - "Urban Settings"
+    - "Water Bodies"
+  # Klassen, um die es in Pane 2 geht
+  focus_classes:
+    scalesia: "Evergreen Forest and Shrubland"
+    invasive: "Invasive Species"
+    agriculture: "Agricultural Lands"
+  citation: >-
+    Vegetation Map of Galápagos v.2016 (A_ECOSISTEMAS_NATIVOS_2016),
+    Instituto de Geografía, Universidad San Francisco de Quito (USFQ).
+
+# --- ENSO-Index (NOAA CPC / PSL) --------------------------------------------
+enso:
+  oni_urls:
+    - "https://origin.cpc.ncep.noaa.gov/products/analysis_monitoring/ensostuff/detrend.nino34.ascii.txt"
+    - "https://psl.noaa.gov/data/correlation/oni.data"
+
+# --- Ablage ------------------------------------------------------------------
+paths:
+  raw:      "data/raw"
+  stations: "data/raw/stations"
+  goes:     "data/raw/goes"
+  era5:     "data/raw/era5"
+  dem:        "data/raw/dem"
+  enso:       "data/raw/enso"
+  vegetation: "data/raw/vegetation"
+  processed: "data/processed"
