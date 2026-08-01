@@ -218,14 +218,7 @@ ui <- fluidPage(
           br(),
           tags$a(href = SZENEN[[1]], target = "_blank", rel = "noopener",
                  class = "btn btn-primary btn-lg",
-                 "Szene in neuem Tab öffnen"),
-          br(), br(),
-          p(class = "klein",
-            "Die Szene wird nicht eingebettet, sondern verlinkt: Diese App",
-            "läuft als WebAssembly und setzt dafür",
-            code("Cross-Origin-Embedder-Policy: require-corp"), "—",
-            "der Browser blockiert damit eingebettete Inhalte von fremden",
-            "Adressen (Fehlercode NS_ERROR_DOM_COEP_FAILED).")
+                 "Szene in neuem Tab öffnen")
         )
       )
     )
