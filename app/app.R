@@ -411,7 +411,7 @@ server <- function(input, output, session) {
   })
 
   # --- Pane 4: 3D ------------------------------------------------------------
-  # Der 3D-Tab ist rein statisch (Link statt iframe, siehe COEP-Hinweis dort).
+  # Der 3D-Tab ist rein statisch.
 }
 
 shinyApp(ui, server)
