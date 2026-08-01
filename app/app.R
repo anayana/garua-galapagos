@@ -208,15 +208,25 @@ ui <- fluidPage(
       "4 — 3D-Ansicht",
       br(),
       fluidRow(
-        column(3,
+        column(12,
+          h4("Rainforest Trail — begehbares 360°-Panorama"),
           p(class = "klein",
             "Szene aus", a("For3Dsuite",
               href = "https://anayana.github.io/For3Dsuite/", target = "_blank"),
-            "— nicht Galápagos.", br(), br(),
-            "Rainforest Trail: 360°-Panorama, Poly Haven, CC0",
-            "(Dimitrios Savva, Jarod Guest).")
-        ),
-        column(9, htmlOutput("f_szene"))
+            "— nicht Galápagos. Panorama von Poly Haven, CC0",
+            "(Dimitrios Savva, Jarod Guest)."),
+          br(),
+          tags$a(href = SZENEN[[1]], target = "_blank", rel = "noopener",
+                 class = "btn btn-primary btn-lg",
+                 "Szene in neuem Tab öffnen"),
+          br(), br(),
+          p(class = "klein",
+            "Die Szene wird nicht eingebettet, sondern verlinkt: Diese App",
+            "läuft als WebAssembly und setzt dafür",
+            code("Cross-Origin-Embedder-Policy: require-corp"), "—",
+            "der Browser blockiert damit eingebettete Inhalte von fremden",
+            "Adressen (Fehlercode NS_ERROR_DOM_COEP_FAILED).")
+        )
       )
     )
   )
@@ -408,10 +418,7 @@ server <- function(input, output, session) {
   })
 
   # --- Pane 4: 3D ------------------------------------------------------------
-  output$f_szene <- renderUI({
-    tags$iframe(src = SZENEN[[1]], width = "100%", height = "560px",
-                style = "border:1px solid #ddd;border-radius:6px;")
-  })
+  # Der 3D-Tab ist rein statisch (Link statt iframe, siehe COEP-Hinweis dort).
 }
 
 shinyApp(ui, server)
